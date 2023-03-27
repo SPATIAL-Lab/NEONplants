@@ -56,6 +56,7 @@ sstats = rbind(sstats, c(wood.pcp[c(1, 3, 2, 4)],
                          0.8 * wood.pcp[2] * wood.pcp[4]))
 
 #Make sources into an iso obj
+sstats[, 5] = sstats[, 5] * 0.99
 sources = iso(sstats$d2H, sstats$d18O, sstats$d2Hsd, sstats$d18Osd,
               sstats$HOcov)
 
@@ -69,7 +70,7 @@ obs = iso(plants$d2H, plants$d18O, rep(2, nrow(plants)),
 
 #Try the mixing analysis???
 wood.post = list()
-for(i in 2:5){
+for(i in 1:nrow(obs)){
   wood.post[[i]] = mixSource(obs[i,], sources, el, ngens = 50000, ncores = 3)
 }
 
@@ -77,7 +78,10 @@ for(i in 2:5){
 View(wood.post[[1]]$summary)
 
 #Plot of all samples showing surface soil contributions
-plot(density(wood.post[[1]]$results$s1_fraction), xlim = c(0, 0.7), ylim = c(0, 5))
-for(i in 2:5){
-  lines(density(wood.post[[i]]$results$s1_fraction), col = i)
+taxa = unique(plants$Sample_Comments)
+par(mar = c(5, 5, 1, 1))
+plot(density(wood.post[[1]]$results$s1_fraction), xlim = c(0, 1), ylim = c(0, 7), main = "")
+for(i in 2:length(wood.post)){
+  lines(density(wood.post[[i]]$results$s1_fraction), col = match(plants$Sample_Comments[i], taxa))
 }
+legend("topright", legend = taxa, col = seq_along(taxa), lwd = 1)

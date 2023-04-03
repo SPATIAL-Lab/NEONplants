@@ -28,9 +28,9 @@ wood.pcp = extract(isoscape, wood.site)
 wood.post = list()
 
 #Loop through each bout and do analysis
-for(j in 1:length(cd)){
+for(i in 1:length(cd)){
   #Subset data to get on bout
-  d.wood.1 = d.wood[d.wood$Collection_Date == cd[j],]
+  d.wood.1 = d.wood[d.wood$Collection_Date == cd[i],]
 
   #Separate plants and soils
   plants = d.wood.1[d.wood.1$Type == "Stem",]
@@ -39,7 +39,6 @@ for(j in 1:length(cd)){
   #Only run the analysis if we have both plant and soil data!
   if(nrow(plants) * nrow(soils)){
     #Aggregate soil data per depth
-    depths = unique(d.wood.1$Depth_meters)
     s1 = soils[soils$Depth_meters >= 0 & soils$Depth_meters < 0.10,]
     s2 = soils[soils$Depth_meters >= 0.1 & soils$Depth_meters < 0.20,]
     s3 = soils[soils$Depth_meters >= 0.2 & soils$Depth_meters < 0.30,]
@@ -54,9 +53,9 @@ for(j in 1:length(cd)){
                         d18Osd = numeric(5), HOcov = numeric(5))
     
     ##Loop through each depth and get stats
-    for(i in 1:5){
-      sstats[i,] = c(mean(s[[i]]$d2H), mean(s[[i]]$d18O), sd(s[[i]]$d2H), 
-                     sd(s[[i]]$d18O), cov(s[[i]]$d2H, s[[i]]$d18O))
+    for(j in 1:5){
+      sstats[j,] = c(mean(s[[j]]$d2H), mean(s[[j]]$d18O), sd(s[[j]]$d2H), 
+                     sd(s[[j]]$d18O), cov(s[[j]]$d2H, s[[j]]$d18O))
     }
     
     #Combine Soil and Precip sources
@@ -75,16 +74,39 @@ for(j in 1:length(cd)){
               rep(0.5, nrow(plants)), rep(0, nrow(plants)))
     
     #Try the mixing analysis???
-    wood.post[[j]] = list()
-    for(i in 1:nrow(obs)){
-      wood.post[[j]][[i]] = mixSource(obs[i,], sources, el, ngens = 50000, ncores = 3)
+    wood.post[[i]] = list()
+    for(j in 1:nrow(obs)){
+      wood.post[[i]][[j]] = mixSource(obs[j,], sources, el, ngens = 50000, ncores = 3)
+    }
+    
+    #Append names to the samples
+    names(wood.post[[i]]) = plants$Sample_ID
+    names(wood.post)[i] = cd[i]
+    
+    #Plots of each source contribution
+    taxa = unique(plants$Sample_Comments)
+    par(mar = c(5, 5, 4, 1))
+    for(j in 1:nrow(sources)){
+      plot(density(wood.post[[i]][[1]]$results[, 2+j]), 
+           xlim = c(0, 1), ylim = c(0, 7), 
+           main = paste(cd[i], "source", j))
+      for(k in 2:length(wood.post[[i]])){
+        lines(density(wood.post[[i]][[k]]$results[, 2+j]), 
+              col = match(plants$Sample_Comments[k], taxa))
+      }
+      legend("topright", legend = taxa, col = seq_along(taxa), lwd = 1)
     }
   }  
-
 }
 
-#Summary statistics for the first sample
-View(wood.post[[1]]$summary)
+#Print out effective sample sizes for review
+for(i in 1:length(wood.post)){
+  for(j in 1:length(wood.post[[i]])){
+    print(names(wood.post)[i])
+    print(names(wood.post[[i]])[j])
+    print(wood.post[[i]][[j]]$summary[,9])
+  }
+}
 
 #Plot of all samples showing surface soil contributions
 taxa = unique(plants$Sample_Comments)

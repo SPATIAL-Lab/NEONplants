@@ -1,7 +1,6 @@
 library(isoWater)
 library(assignR)
-library(sp)
-library(raster)
+library(terra)
 
 #Get soil and plant data from wiDB
 d = wiDB_data(projects = '00384')
@@ -11,18 +10,19 @@ d = d$data
 unique(d$Site_ID)
 d.wood = d[d$Site_ID == "WOOD_tower",]
 
-#Get a list of all the bouts by date
-cd = unique(d.wood$Collection_Date)
+#Get a list of all the bouts
+bout = substr(d.wood$Sample_ID, 8, 12)
+bouts = unique(bout)
 
 #Precipitation source
 isoscape = getIsoscapes("GlobalPrecipMA")
-wood.site = SpatialPoints(data.frame(d.wood$Longitude[1], d.wood$Latitude[1]), 
-                          crs(isoscape))
+wood.site = vect(data.frame("lon" = d.wood$Longitude[1], "lat" = d.wood$Latitude[1]), 
+                          geom = c("lon", "lat"), crs(isoscape))
 ##Reality check
 plot(isoscape[[1]])
 points(wood.site)
 ##Extract precip values at the site
-wood.pcp = extract(isoscape, wood.site)
+wood.pcp = extract(isoscape, wood.site, ID = FALSE)
 
 #Create a list to store all the great results
 wood.post = list()
@@ -30,7 +30,7 @@ wood.post = list()
 #Loop through each bout and do analysis
 for(i in 1:length(cd)){
   #Subset data to get on bout
-  d.wood.1 = d.wood[d.wood$Collection_Date == cd[i],]
+  d.wood.1 = d.wood[bout == bouts[i],]
 
   #Separate plants and soils
   plants = d.wood.1[d.wood.1$Type == "Stem",]
@@ -59,15 +59,16 @@ for(i in 1:length(cd)){
     }
     
     #Combine Soil and Precip sources
-    sstats = rbind(sstats, c(wood.pcp[c(1, 3, 2, 4)], 
-                             0.8 * wood.pcp[2] * wood.pcp[4]))
+    p = c(wood.pcp[c(1, 3, 2, 4)], 0.8 * wood.pcp[2] * wood.pcp[4])
+    names(p) = names(sstats)
+    sstats = rbind(sstats, p)
     
     #Make sources into an iso obj
     sources = iso(sstats$d2H, sstats$d18O, sstats$d2Hsd, sstats$d18Osd,
                   sstats$HOcov)
     
     #Define EL slope prior...we should pull from the map on waterisotopes.org
-    el = c(6.5, 0.5)
+    el = c(2.5, 0.5)
     
     #Create our obs object
     obs = iso(plants$d2H, plants$d18O, rep(2, nrow(plants)), 
@@ -82,9 +83,21 @@ for(i in 1:length(cd)){
     #Append names to the samples
     names(wood.post[[i]]) = plants$Sample_ID
     names(wood.post)[i] = cd[i]
-    
-    #Plots of each source contribution
+
+    #Plot data
     taxa = unique(plants$Sample_Comments)
+    plot(plants$d18O, plants$d2H, xlab = "d18O", ylab = "d2H",
+         xlim = range(c(plants$d18O, soils$d18O)),
+         ylim = range(c(plants$d2H, soils$d2H)))
+    points(sstats$d18O, sstats$d2H, pch = 21, bg = seq(nrow(sstats)))
+    for(j in 2:length(taxa)){
+      points(plants$d18O[plants$Sample_Comments == taxa[j]],
+             plants$d2H[plants$Sample_Comments == taxa[j]], col = j)
+    }
+    abline(10, 8)
+    legend("bottomright", legend = taxa, col = seq_along(taxa), pch = 1)
+
+    #Plots of each source contribution
     par(mar = c(5, 5, 4, 1))
     for(j in 1:nrow(sources)){
       plot(density(wood.post[[i]][[1]]$results[, 2+j]), 

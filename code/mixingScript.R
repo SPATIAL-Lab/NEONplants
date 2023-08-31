@@ -2,83 +2,100 @@ library(isoWater)
 library(assignR)
 library(terra)
 
-#Get soil and plant data from wiDB
-d = wiDB_data(projects = '00384')
-d = d$data
+# Prep ####
+## Read data
+p = read.csv("data/plants.csv")
+s = read.csv("data/soils.csv")
 
-#Subset data to get one site
-unique(d$Site_ID)
-d.wood = d[d$Site_ID == "WOOD_tower",]
+## GW source map
+isoscape = getIsoscapes("USGround")
 
-#Get a list of all the bouts
-bout = substr(d.wood$Sample_ID, 8, 12)
-bouts = unique(bout)
+## Sites
+sites = unique(data.frame("ID" = p$Site_ID, "lon" = p$Longitude, "lat" = p$Latitude))
+sites = vect(sites, crs = "WGS84")
+sites = project(sites, isoscape)
 
-#Precipitation source
-isoscape = getIsoscapes("GlobalPrecipMA")
-wood.site = vect(data.frame("lon" = d.wood$Longitude[1], "lat" = d.wood$Latitude[1]), 
-                          geom = c("lon", "lat"), crs(isoscape))
-##Reality check
-plot(isoscape[[1]])
-points(wood.site)
-##Extract precip values at the site
-wood.pcp = extract(isoscape, wood.site, ID = FALSE)
+## GW at sites
+gw = extract(isoscape, sites, method = "bilinear")
 
-#Create a list to store all the great results
-wood.post = list()
-
-#Loop through each bout and do analysis
-for(i in 1:length(cd)){
-  #Subset data to get on bout
-  d.wood.1 = d.wood[bout == bouts[i],]
-
-  #Separate plants and soils
-  plants = d.wood.1[d.wood.1$Type == "Stem",]
-  soils = d.wood.1[d.wood.1$Type == "Soil",]
+# Mix source ####
+## Loop through each site and bout and do analysis
+for(i in 1:length(sites)){
+  ## Subset for site
+  sid = sites$ID[i]
+  p.site = p[p$Site_ID == sid,]
+  s.site = s[s$Site_ID == sid,]
   
-  #Only run the analysis if we have both plant and soil data!
-  if(nrow(plants) * nrow(soils)){
-    #Aggregate soil data per depth
-    s1 = soils[soils$Depth_meters >= 0 & soils$Depth_meters < 0.10,]
-    s2 = soils[soils$Depth_meters >= 0.1 & soils$Depth_meters < 0.20,]
-    s3 = soils[soils$Depth_meters >= 0.2 & soils$Depth_meters < 0.30,]
-    s4 = soils[soils$Depth_meters >= 0.3 & soils$Depth_meters < 0.40,]
-    s5 = soils[soils$Depth_meters >= 0.4,]
+  ## Storage space
+  if(!(dir.exists(file.path("out", sid)))){
+    dir.create(file.path("out", sid))
+  }
+  
+  ## List of bouts
+  bouts = unique(p.site$Bout)
+  
+  for(j in seq_along(bouts)){
+    ## Subset for bout
+    bid = bouts[j]
+    p.bout = p.site[p.site$Bout == bid,]
+    s.bout = s.site[s.site$Bout == bid,]
     
-    ##Combine all depths into a list for the looping
-    s = list(s1, s2, s3, s4, s5)
+    ## Prep soil sources
+    depths = unique(s.bout$Depth)
     
-    ##Space to store stats from loop
-    sstats = data.frame(d2H = numeric(5), d18O = numeric(5), d2Hsd = numeric(5),
-                        d18Osd = numeric(5), HOcov = numeric(5))
+    ## Space to store soil stats
+    svals = matrix(ncol = 5, nrow = 0)
     
-    ##Loop through each depth and get stats
-    for(j in 1:5){
-      sstats[j,] = c(mean(s[[j]]$d2H), mean(s[[j]]$d18O), sd(s[[j]]$d2H), 
-                     sd(s[[j]]$d18O), cov(s[[j]]$d2H, s[[j]]$d18O))
+    ## Loop through each depth and get stats
+    for(k in seq_along(depths)){
+      s.depth = s.bout[s.bout$Depth == depths[k],]
+      ## Only calculate covariance if n > 3, otherwise assume R = 0.8
+      if(nrow(s.depth) > 2){
+        svals = rbind(svals, c(mean(s.depth$d2H), mean(s.depth$d18O), 
+                               sd(s.depth$d2H), sd(s.depth$d18O), 
+                               cov(s.depth$d2H, s.depth$d18O)))
+      } else{
+        svals = rbind(svals, c(mean(s.depth$d2H), mean(s.depth$d18O), 
+                               sd(s.depth$d2H), sd(s.depth$d18O), 
+                               0.8 * sd(s.depth$d2H) * sd(s.depth$d18O)))
+      }
     }
     
-    #Combine Soil and Precip sources
-    p = c(wood.pcp[c(1, 3, 2, 4)], 0.8 * wood.pcp[2] * wood.pcp[4])
-    names(p) = names(sstats)
-    sstats = rbind(sstats, p)
+    ## Fill in missing values
+    for(k in 3:5){
+      svals[is.na(svals[,k]), k] = mean(svals[,k], na.rm = TRUE)
+    }
     
-    #Make sources into an iso obj
-    sources = iso(sstats$d2H, sstats$d18O, sstats$d2Hsd, sstats$d18Osd,
-                  sstats$HOcov)
-    
-    #Define EL slope prior...we should pull from the map on waterisotopes.org
+    ## Add groundwater assume R = 0.8
+    svals = rbind(svals, c(gw$`d2h_1-10m`[i], gw$`d18o_1-10m`[i],
+                           gw$`d2h_sd_1-10m`[i], gw$`d18o_sd_1-10m`[i],
+                           0.8 * gw$`d2h_sd_1-10m`[i] * gw$`d18o_sd_1-10m`[i]))
+
+    ## Make sources into an iso obj
+    sources = iso(svals[,1], svals[,2], svals[,3], svals[,4], svals[,5])
+
+    ## EL slope and evap prior parameters
     el = c(2.5, 0.5)
+    eprior = c(0.2, 1)
     
-    #Create our obs object
-    obs = iso(plants$d2H, plants$d18O, rep(2, nrow(plants)), 
-              rep(0.5, nrow(plants)), rep(0, nrow(plants)))
+    ## Iso object for plant samples
+    obs = iso(p.bout$d2H, p.bout$d18O, rep(2, nrow(p.bout)), 
+              rep(0.5, nrow(p.bout)), rep(0, nrow(p.bout)))
     
-    #Try the mixing analysis???
-    wood.post[[i]] = list()
-    for(j in 1:nrow(obs)){
-      wood.post[[i]][[j]] = mixSource(obs[j,], sources, el, ngens = 50000, ncores = 3)
+    ## Mixing analysis
+    smix = list()
+    for(k in 1:nrow(obs)){
+      smix[[k]] = mixSource(obs[k,], sources, el, edist = "gamma",
+                            eprior = eprior, ngens = 5e4, ncores = 3)
+      names(smix)[k] = p.bout$Species[k]
     }
+    
+    ## Write results
+    save(smix, file = file.path("out", sid, paste0(bid, ".rda")))
+  }
+
+  
+    
     
     #Append names to the samples
     names(wood.post[[i]]) = plants$Sample_ID

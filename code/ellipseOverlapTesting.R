@@ -59,4 +59,5 @@ plot(density((b95["overlap"] / (b95["area1"] + b95["area2"] - b95["overlap"]))[,
              from = 0), main = "")
 
 ## Run MLE using my multi version...so fast
+source("code/multiLikeOverlap.R")
 e95 = multiLikOverlap(ps.t$all.groups, ps.t, n = 500)

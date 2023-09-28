@@ -2,7 +2,7 @@ library(isoWater)
 library(assignR)
 library(terra)
 
-# Prep ####
+# Prep ----
 ## Read data
 p = read.csv("data/plants.csv")
 s = read.csv("data/soils.csv")
@@ -18,7 +18,7 @@ sites = project(sites, isoscape)
 ## GW at sites
 gw = extract(isoscape, sites, method = "bilinear")
 
-# Mix source ####
+# Mix source ----
 ## Loop through each site and bout and do analysis
 for(i in 1:length(sites)){
   ## Subset for site
@@ -100,7 +100,7 @@ for(i in 1:length(sites)){
   }
 }
   
-    
+# Code residue, some may be useful ----    
     
     #Append names to the samples
     names(wood.post[[i]]) = plants$Sample_ID

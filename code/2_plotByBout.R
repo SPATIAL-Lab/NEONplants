@@ -1,4 +1,4 @@
-# Prep ####
+# Prep ----
 ## Read data
 p = read.csv("data/plants.csv")
 s = read.csv("data/soils.csv")
@@ -6,7 +6,7 @@ s = read.csv("data/soils.csv")
 ## Bouts
 bouts = sort(unique(c(p$Bout, s$Bout)))
 
-# Plot ####
+# Plot ----
 for(i in bouts){
   ## Bout subset
   p_sub = p[p$Bout == i,]

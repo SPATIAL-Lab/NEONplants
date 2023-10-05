@@ -44,6 +44,9 @@ for(i in seq_along(sp.low$Var1)){
 ## Review - mostly shrubs and grasses
 View(sp.low)
 
+## Save
+write.csv(p, "out/plantWDex.csv", row.names = FALSE)
+
 # Compare with irms data ----
 s$ID = substr(s$Sample_ID, 8, nchar(s$Sample_ID))
 p$ID = substr(p$Sample_ID, 8, nchar(p$Sample_ID))
@@ -81,3 +84,7 @@ plot(density(p.diff.o))
 
 ## View the plant results for O
 View(data.frame(pirms$ID, pirms$Species, p.diff.o))
+
+## Write out these results
+pirms = cbind(pirms, p.diff.h, p.diff.o)
+write.csv(pirms, "out/plantDiff.csv")

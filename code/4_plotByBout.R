@@ -1,6 +1,6 @@
 # Prep ----
 ## Read data
-p = read.csv("data/plants.csv")
+p = read.csv("out/plantsNoLow.csv")
 s = read.csv("data/soils.csv")
 
 ## Bouts

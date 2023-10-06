@@ -20,7 +20,7 @@ gw = extract(isoscape, sites, method = "bilinear")
 
 # Mix source ----
 ## Loop through each site and bout and do analysis
-for(i in 1:length(sites)){
+for(i in 10:length(sites)){
   ## Subset for site
   sid = sites$ID[i]
   p.site = p[p$Site_ID == sid,]
@@ -99,7 +99,55 @@ for(i in 1:length(sites)){
     save(smix, file = file.path("out", sid, paste0(bid, ".rda")))
   }
 }
+
+# Plot results ----
+species = names(smix)
+sp.all = unique(species)
+sp.ind = match(species, sp.all)
+
+## Cycle through species
+for(i in seq_along(sp.all)){
+  sp.ind = which(species == sp.all[i])
   
+  ## Space for density
+  d = list()
+  d.all = numeric()
+  for(j in 1:5){
+    d[[j]] = density(smix[[sp.ind[1]]]$results[, 2 + j], from = 0, to = 1)
+    d.all = append(d.all, d[[j]]$y)
+  }
+  
+  ## Plot first source
+  plot(d[[1]], main = sp.all[i], xlab = "", xlim = c(0, 1), lwd = 2,
+       ylim = c(0, max(d.all)))
+  
+  ## Add others
+  for(j in 2:5){
+    lines(d[[j]], col = j, lwd = 2)
+  }
+  
+  if(length(sp.ind) > 1){
+    for(k in 2:length(sp.ind)){
+      d = list()
+      d.all = numeric()
+      for(j in 1:5){
+        d[[j]] = density(smix[[sp.ind[k]]]$results[, 2 + j], from = 0, to = 1)
+        d.all = append(d.all, d[[j]]$y)
+      }
+      
+      ## Add sources
+      for(j in 1:5){
+        lines(d[[j]], col = j, lty = k, lwd = 2)
+      }
+    }
+  }
+  
+  legend("topright", c("0-10 cm", "10-20 cm", "20-40 cm", "40+ cm", "Groundwater"),
+         col = 1:5, lty = 1, lwd = 2)
+}
+
+
+
 # Code residue, some may be useful ----    
     
     #Append names to the samples

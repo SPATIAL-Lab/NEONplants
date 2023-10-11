@@ -20,7 +20,7 @@ gw = extract(isoscape, sites, method = "bilinear")
 
 # Mix source ----
 ## Loop through each site and bout and do analysis
-for(i in 10:length(sites)){
+for(i in 1:length(sites)){
   ## Subset for site
   sid = sites$ID[i]
   p.site = p[p$Site_ID == sid,]
@@ -101,111 +101,63 @@ for(i in 10:length(sites)){
 }
 
 # Plot results ----
-species = names(smix)
-sp.all = unique(species)
-sp.ind = match(species, sp.all)
-
-## Cycle through species
-for(i in seq_along(sp.all)){
-  sp.ind = which(species == sp.all[i])
+## Function
+plot.post = function(smix, bid){
+  species = names(smix)
+  sp.all = unique(species)
+  sp.ind = match(species, sp.all)
   
-  ## Space for density
-  d = list()
-  d.all = numeric()
-  for(j in 1:5){
-    d[[j]] = density(smix[[sp.ind[1]]]$results[, 2 + j], from = 0, to = 1)
-    d.all = append(d.all, d[[j]]$y)
-  }
-  
-  ## Plot first source
-  plot(d[[1]], main = sp.all[i], xlab = "", xlim = c(0, 1), lwd = 2,
-       ylim = c(0, max(d.all)))
-  
-  ## Add others
-  for(j in 2:5){
-    lines(d[[j]], col = j, lwd = 2)
-  }
-  
-  if(length(sp.ind) > 1){
-    for(k in 2:length(sp.ind)){
-      d = list()
-      d.all = numeric()
-      for(j in 1:5){
-        d[[j]] = density(smix[[sp.ind[k]]]$results[, 2 + j], from = 0, to = 1)
-        d.all = append(d.all, d[[j]]$y)
-      }
-      
-      ## Add sources
-      for(j in 1:5){
-        lines(d[[j]], col = j, lty = k, lwd = 2)
-      }
-    }
-  }
-  
-  legend("topright", c("0-10 cm", "10-20 cm", "20-40 cm", "40+ cm", "Groundwater"),
-         col = 1:5, lty = 1, lwd = 2)
-}
-
-
-
-# Code residue, some may be useful ----    
+  ## Cycle through species
+  for(i in seq_along(sp.all)){
+    sp.ind = which(species == sp.all[i])
     
-    #Append names to the samples
-    names(wood.post[[i]]) = plants$Sample_ID
-    names(wood.post)[i] = cd[i]
-
-    #Plot data
-    taxa = unique(plants$Sample_Comments)
-    plot(plants$d18O, plants$d2H, xlab = "d18O", ylab = "d2H",
-         xlim = range(c(plants$d18O, soils$d18O)),
-         ylim = range(c(plants$d2H, soils$d2H)))
-    points(sstats$d18O, sstats$d2H, pch = 21, bg = seq(nrow(sstats)))
-    for(j in 2:length(taxa)){
-      points(plants$d18O[plants$Sample_Comments == taxa[j]],
-             plants$d2H[plants$Sample_Comments == taxa[j]], col = j)
-    }
-    abline(10, 8)
-    legend("bottomright", legend = taxa, col = seq_along(taxa), pch = 1)
-
-    #Plots of each source contribution
-    par(mar = c(5, 5, 4, 1))
-    for(j in 1:nrow(sources)){
-      plot(density(smix[[1]]$results[, 2+j]), 
-           xlim = c(0, 1), ylim = c(0, 7), 
-           main = paste("source", j))
-      for(k in 2:length(smix)){
-        lines(density(smix[[k]]$results[, 2+j]), 
-              col = match(names(smix)[k], unique(names(smix))))
-      }
-      legend("topright", legend = unique(names(smix)), 
-             col = seq_along(unique(names(smix))), lwd = 1)
+    ## Space for density
+    d = list()
+    d.all = numeric()
+    for(j in 1:5){
+      d[[j]] = density(smix[[sp.ind[1]]]$results[, 2 + j], from = 0, to = 1)
+      d.all = append(d.all, d[[j]]$y)
     }
     
-
-
-#Print out effective sample sizes for review
-for(i in 1:length(wood.post)){
-  for(j in 1:length(wood.post[[i]])){
-    print(names(wood.post)[i])
-    print(names(wood.post[[i]])[j])
-    print(wood.post[[i]][[j]]$summary[,9])
+    ## Plot first source
+    plot(d[[1]], main = paste(bid, sp.all[i], sep = ":"), xlab = "", xlim = c(0, 1), lwd = 2,
+         ylim = c(0, max(d.all)))
+    
+    ## Add others
+    for(j in 2:5){
+      lines(d[[j]], col = j, lwd = 2)
+    }
+    
+    if(length(sp.ind) > 1){
+      for(k in 2:length(sp.ind)){
+        d = list()
+        d.all = numeric()
+        for(j in 1:5){
+          d[[j]] = density(smix[[sp.ind[k]]]$results[, 2 + j], from = 0, to = 1,
+                           bw = 0.05)
+          d.all = append(d.all, d[[j]]$y)
+        }
+        
+        ## Add sources
+        for(j in 1:5){
+          lines(d[[j]], col = j, lty = k, lwd = 2)
+        }
+      }
+    }
+    
+    legend("topright", c("0-10 cm", "10-20 cm", "20-40 cm", "40+ cm", "Groundwater"),
+           col = 1:5, lty = 1, lwd = 2)
   }
 }
 
-#Plot of all samples showing surface soil contributions
-taxa = unique(plants$Sample_Comments)
-par(mar = c(5, 5, 1, 1))
-plot(density(wood.post[[1]]$results$s1_fraction), xlim = c(0, 1), ylim = c(0, 7), main = "")
-for(i in 2:length(wood.post)){
-  lines(density(wood.post[[i]]$results$s1_fraction), col = match(plants$Sample_Comments[i], taxa))
+## Loop
+for(i in 1:length(sites)){
+  sid = sites$ID[i]
+  bouts = sort(unique(p[p$Site_ID == sid,]$Bout))
+  for(j in seq_along(bouts)){
+    load(file.path("out", sid, paste0(bouts[j], ".rda")))
+    plot.post(smix, bouts[j])
+  }
 }
-legend("topright", legend = taxa, col = seq_along(taxa), lwd = 1)
 
-#Plot of all samples showing deep soil contributions
-taxa = unique(plants$Sample_Comments)
-par(mar = c(5, 5, 1, 1))
-plot(density(wood.post[[1]]$results$s7_fraction), xlim = c(0, 1), ylim = c(0, 7), main = "")
-for(i in 2:length(wood.post)){
-  lines(density(wood.post[[i]]$results$s7_fraction), col = match(plants$Sample_Comments[i], taxa))
-}
-legend("topright", legend = taxa, col = seq_along(taxa), lwd = 1)
+

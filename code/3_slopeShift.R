@@ -109,6 +109,8 @@ for(i in seq_along(specSpec$Species)){
   specSpec$LowSS[i] = sum(psub$SlopeShift < -15)
 }
 specSpec$LowFrac = specSpec$LowSS / specSpec$Count
+specSpec = specSpec[rev(order(specSpec$LowFrac)),]
+write.csv(specSpec, "out/screenedBySpecies.csv")
 
 ## Get common names from GBIF
 specSpec$Vernacular = rep("")

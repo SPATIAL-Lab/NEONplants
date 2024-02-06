@@ -25,8 +25,7 @@ multiLikOverlap = function(groups, siber.object,
   polys = rbind(polys, aggregate(polys))
   areas = suppressWarnings(expanse(polys))
   
-  areas = append(areas, (sum(areas[-length(areas)]) - areas[length(areas)]) / 
-                   areas[length(areas)])
+  areas = append(areas, 1 - (areas[length(areas)] / sum(areas[-length(areas)])))
   
   names(areas) = c(groups, "Combined", "Fraction Overlap")
 

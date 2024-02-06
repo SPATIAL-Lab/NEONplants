@@ -1,6 +1,6 @@
 library(rgbif)
 
-# Pull raw data files ----
+# Pull raw data files -not portable- ----
 ## Read data
 p = read.csv("out/plantWDex.csv")
 p.diff = read.csv("out/plantDiff.csv")
@@ -10,7 +10,7 @@ sid = strsplit(p$Sample_ID, "_")
 sid = sapply(sid, "[[", 1)
 sid = unique(sid)
 
-## Directories -not portable-
+## Directories 
 wd = "~/../Dropbox"
 
 ## Find runfiles files from jobnumbers
@@ -36,7 +36,7 @@ for(i in seq_along(fdate)){
   cf = append(cf, cfs[length(cfs)])
 }
 
-# Process metrics ----
+# Process metrics -not portable- ----
 sshift = data.frame("Vial" = numeric(), "SlopeShift" = numeric(),
                     "ID" = character())
 for(i in seq_along(rf)){
@@ -68,6 +68,8 @@ for(i in seq_along(rf)){
   }
 }
 
+write.csv(sshift, "out/sshift.csv")
+
 # Condense and match ----
 ## Average per ID
 ssAve = data.frame("ID" = unique(sshift$ID), "SlopeShift" = rep(0))
@@ -93,9 +95,11 @@ plot(p$SlopeShift, p$Dex.off)
 sum(is.na(p$SlopeShift))
 sum(p$SlopeShift < -15, na.rm = TRUE)
 
+png("out/Dex_screening.png")
 plot(density(p$Dex.off))
 lines(density(p$Dex.off[p$SlopeShift > -15]), col = "blue")
 lines(density(p$Dex.off[p$SlopeShift > -5]), col = "red")
+dev.off()
 
 # Species summaries ---
 ## Space

@@ -62,6 +62,7 @@ abline(0, 1)
 ## Soil stats
 s.diff.h = apply(cbind(sirms$d2H, sirms$d2H.irms), 1, diff)
 s.diff.o = apply(cbind(sirms$d18O, sirms$d18O.irms), 1, diff)
+s.diff.o = s.diff.o[s.diff.o < 5]
 t.test(s.diff.h)
 t.test(s.diff.o)
 sd(s.diff.h)

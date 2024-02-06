@@ -75,6 +75,7 @@ for(i in 1:length(sites)){
     svals = rbind(svals, c(gw$`d2h_1-10m`[i], gw$`d18o_1-10m`[i],
                            gw$`d2h_sd_1-10m`[i], gw$`d18o_sd_1-10m`[i],
                            0.8 * gw$`d2h_sd_1-10m`[i] * gw$`d18o_sd_1-10m`[i]))
+    snames = c(depths, "Groundwater")
 
     ## Make sources into an iso obj
     sources = iso(data.frame(svals))
@@ -93,6 +94,7 @@ for(i in 1:length(sites)){
       smix[[k]] = mixSource(obs[k,], sources, el, edist = "gamma",
                             eprior = eprior, ngens = 5e4, ncores = 3)
       names(smix)[k] = p.bout$Species[k]
+      names(smix[[k]]$results)[3:(2 + length(snames))] = snames
     }
     
     ## Write results
@@ -100,7 +102,7 @@ for(i in 1:length(sites)){
   }
 }
 
-# Plot results ----
+# Plot results: density by species ----
 ## Function
 plot.post = function(smix, bid){
   species = names(smix)
@@ -159,5 +161,44 @@ for(i in 1:length(sites)){
     plot.post(smix, bouts[j])
   }
 }
+
+
+# Plot results: violin by bout ----
+## Function
+plot.sources = function(smix, bid){
+  
+  r = smix[[1]]$results
+  r$species = rep(names(smix)[1])
+  for(i in seq_along(smix)[-1]){
+    ra = smix[[i]]$results
+    ra$species = rep(names(smix)[i])
+    r = rbind(r, ra)
+  }
+  
+  rv = data.frame("species" = character(), "source" = character(), "fraction" = numeric())
+  for(i in 1:(ncol(r) - 5)){
+    rva = data.frame("species" = r$species, "fraction" = r[, 2 + i])
+    rva$source = rep(names(r)[i + 2])
+    rv = rbind(rv, rva)
+  }
+  
+  png(paste0("out/sources/", bid, ".png"), width = 9, height = 4, units = "in", res = 600)
+  print(ggplot(rv, aes(x = species, y = fraction, fill = source)) +
+    geom_violin() + 
+    labs(title = bid, x = "Species", y = "Fraction", fill = "Sources"))
+  dev.off()
+  
+}
+
+## Loop
+for(i in 1:length(sites)){
+  sid = sites$ID[i]
+  bouts = sort(unique(p[p$Site_ID == sid,]$Bout))
+  for(j in seq_along(bouts)){
+    load(file.path("out", sid, paste0(bouts[j], ".rda")))
+    plot.sources(smix, bouts[j])
+  }
+}
+
 
 

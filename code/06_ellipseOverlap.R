@@ -83,8 +83,8 @@ for(i in seq_along(bouts$Bout)){
   ps = data.frame("iso1" = numeric(), "iso2" = numeric(), "group" = character(), 
                   "community" = numeric())
   for(j in seq_along(smix)){
-    psa = data.frame("iso1" = smix[[j]]$results$mixture_d18O, 
-                     "iso2" = smix[[j]]$results$mixture_d2H, 
+    psa = data.frame("iso1" = smix[[j]]$results$mixture_d2H, 
+                     "iso2" = smix[[j]]$results$mixture_d18O, 
                      "group" = rep(names(smix)[j]), 
                      "community" = rep(1))
     ps = rbind(ps, psa)
@@ -128,8 +128,8 @@ for(i in seq_along(bouts$Bout)){
   ps = data.frame("iso1" = numeric(), "iso2" = numeric(), "group" = character(), 
                   "community" = numeric())
   for(j in seq_along(smix)){
-    psa = data.frame("iso1" = smix[[j]]$summary["mixture_d18O", "50%"], 
-                     "iso2" = smix[[j]]$summary["mixture_d2H", "50%"], 
+    psa = data.frame("iso1" = smix[[j]]$summary["mixture_d2H", "50%"], 
+                     "iso2" = smix[[j]]$summary["mixture_d18O", "50%"], 
                      "group" = names(smix)[j], 
                      "community" = 1)
     ps = rbind(ps, psa)

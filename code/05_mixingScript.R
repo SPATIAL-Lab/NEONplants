@@ -18,6 +18,9 @@ sites = project(sites, isoscape)
 ## GW at sites
 gw = extract(isoscape, sites, method = "bilinear")
 
+## Space for summary stats
+mixes = list()
+
 # Mix source ----
 ## Loop through each site and bout and do analysis
 for(i in 1:length(sites)){
@@ -95,12 +98,47 @@ for(i in 1:length(sites)){
                             eprior = eprior, ngens = 5e4, ncores = 3)
       names(smix)[k] = p.bout$Species[k]
       names(smix[[k]]$results)[3:(2 + length(snames))] = snames
+      row.names(smix[[k]]$summary)[4:(3 + length(snames))] = snames
+      
+      ## Compile summaries
+      mix = list("Bout" = bid, "Species" = p.bout$Species[k], 
+                 "Mix" = smix[[k]]$summary)
+      mixes[[length(mixes) + 1]] = mix
     }
     
     ## Write results
-    save(smix, file = file.path("out", sid, paste0(bid, ".rda")))
+    sources = cbind("Depth" = snames, sources)
+    save(smix, sources, file = file.path("out", sid, paste0(bid, ".rda")))
+    
   }
 }
+
+# Parse mixing summaries ----
+nr = length(mixes)
+fn = row.names(mixes[[1]]$Mix)[-c(2, 3,9, 10)]
+mix = data.frame("Bout" = character(nr), "Species" = character(nr), 
+                 "E.med" = numeric(nr), "E.IQR" = numeric(nr),
+                 "X0.10cm.med" = numeric(nr), "X0.10cm.IQR" = numeric(nr),
+                 "X10.20cm.med" = numeric(nr), "X10.20cm.IQR" = numeric(nr),
+                 "X20.40cm.med" = numeric(nr), "X20.40cm.IQR" = numeric(nr),
+                 "X40.cm.med" = numeric(nr), "X40.cm.IQR" = numeric(nr),
+                 "GW.med" = numeric(nr), "GW.IQR" = numeric(nr))
+
+for(i in seq_along(mixes)){
+  mix$Bout[i] = mixes[[i]]$Bout
+  mix$Species[i] = mixes[[i]]$Species
+  for(j in seq_along(fn)){
+    k = match(fn[j], row.names(mixes[[i]]$Mix))
+    if(is.na(k)){
+      mix[i, 3 + (j - 1) * 2] = mix[i, 4 + (j - 1) * 2] = NA
+    }else{
+      mix[i, 3 + (j - 1) * 2] = mixes[[i]]$Mix[k, 5]
+      mix[i, 4 + (j - 1) * 2] = mixes[[i]]$Mix[k, 6] - mixes[[i]]$Mix[k, 4]
+    }
+  }
+}
+
+write.csv(mix, "out/mixStats.csv", row.names = FALSE)
 
 # Plot results: density by species ----
 ## Function

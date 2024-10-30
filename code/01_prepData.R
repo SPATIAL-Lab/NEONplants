@@ -62,9 +62,19 @@ sort(unique(s$Depth))
 # Remove a few outliers ----
 s = s[!(s$Bout == "CLBJ4" & s$d18O < -10),]
 s = s[!(s$Bout == "CPER1" & s$d2H > -40),]
+s = s[!(s$Bout == "HARV2" & s$d18O < -12),]
+s = s[!(s$Bout == "HARV3" & s$d18O < -8.5),]
+s = s[!(s$Bout == "HARV5" & s$d18O > -4),]
+s = s[!(s$Bout == "HARV6" & s$d18O > -5),]
+s = s[!(s$Bout == "OSBS3" & s$d18O < -8),] #this could be real due to Hurricane Eta, but not reflected in xylem
+s = s[!(s$Bout == "SCBI1" & s$d18O > -2),]
+s = s[!(s$Bout == "SCBI3" & s$d18O > -3),]
 s = s[!(s$Bout == "SCBI6" & s$d2H < -140),]
 s = s[!(s$Bout == "WOOD7" & s$d2H < -140),]
+#SJER5 soil profile looks inverted...no precip reported during that month
+s = s[s$Bout != "SJER5",]
 
+p = p[p$Bout != "SJER5",]
 p = p[!(p$Bout == "CPER2" & p$d18O > 20),]
 p = p[!(p$Bout == "WOOD6" & p$d18O < -15),]
 

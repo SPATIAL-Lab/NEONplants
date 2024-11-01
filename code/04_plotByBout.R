@@ -11,6 +11,8 @@ for(i in bouts){
   ## Bout subset
   p_sub = p[p$Bout == i,]
   s_sub = s[s$Bout == i,]
+  xlim = range(c(p_sub$d18O.oc, s_sub$d18O))
+  ylim = range(c(p_sub$d2H, s_sub$d2H))
   
   ## Depths and species
   species = (unique(p_sub$Species))
@@ -30,7 +32,7 @@ for(i in bouts){
   par(mar = c(5, 5, 3, 3))
   
   ## Set up the plot area
-  plot(d2H ~ d18O, data = rbind(p_sub[, 1:22], s_sub[, 1:22]), 
+  plot(d2H ~ d18O.oc, data = p_sub, xlim = xlim, ylim = ylim,
        main = paste(i, ":", format(as.Date(p_sub$Collection_Date[1]), "%Y-%m")), 
        type = "n", xlab = expression(delta^{18}*"O (VSMOW)"),
        ylab = expression(delta^2*"H (VSMOW)"))
@@ -40,7 +42,7 @@ for(i in bouts){
          bg = col.soil[match(s_sub$Depth, depths)])
   
   ## Add the stem data
-  points(d2H ~ d18O, data = p_sub, pch = 22,
+  points(d2H ~ d18O.oc, data = p_sub, pch = 22,
          bg = col.stem[match(p_sub$Species, species)])
   
   ## Add GMWL

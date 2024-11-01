@@ -1,6 +1,7 @@
 library(isoWater)
 library(assignR)
 library(terra)
+library(ggplot2)
 
 # Prep ----
 ## Read data
@@ -11,7 +12,8 @@ s = read.csv("data/soils.csv")
 isoscape = getIsoscapes("USGround")
 
 ## Sites
-sites = unique(data.frame("ID" = p$Site_ID, "lon" = p$Longitude, "lat" = p$Latitude))
+sites = unique(data.frame("ID" = p$Site_ID, "lon" = p$Longitude, 
+                          "lat" = p$Latitude))
 sites = vect(sites, crs = "WGS84")
 sites = project(sites, isoscape)
 
@@ -20,6 +22,10 @@ gw = extract(isoscape, sites, method = "bilinear")
 
 ## Space for summary stats
 mixes = list()
+
+## Space to track whether plant values are bounded by sources
+pbound = p[c("Site_ID", "Sample_ID", "Bout", "Species")]
+pbound$d2H.bound = pbound$d18O.bound = rep(NA)
 
 # Mix source ----
 ## Loop through each site and bout and do analysis
@@ -88,7 +94,7 @@ for(i in 1:length(sites)){
     eprior = c(0.2, 1)
     
     ## Iso object for plant samples
-    obs = iso(p.bout$d2H, p.bout$d18O, rep(2, nrow(p.bout)), 
+    obs = iso(p.bout$d2H, p.bout$d18O.oc, rep(2, nrow(p.bout)), 
               rep(0.5, nrow(p.bout)), rep(0, nrow(p.bout)))
     
     ## Mixing analysis
@@ -104,6 +110,21 @@ for(i in 1:length(sites)){
       mix = list("Bout" = bid, "Species" = p.bout$Species[k], 
                  "Mix" = smix[[k]]$summary)
       mixes[[length(mixes) + 1]] = mix
+      
+      ## Populate pbound
+      if(obs$H[k] >= min(sources$H - 2 * sources$Hsd) & 
+         obs$H[k] <= max(sources$H + 2 * sources$Hsd)){
+        pbound$d2H.bound[pbound$Sample_ID == p.bout$Sample_ID[k]] = TRUE
+      } else{
+        pbound$d2H.bound[pbound$Sample_ID == p.bout$Sample_ID[k]] = FALSE
+      }
+      
+      if(obs$O[k] >= min(sources$O - 2 * sources$Osd) & 
+         obs$O[k] <= max(sources$O + 2 * sources$Osd)){
+        pbound$d18O.bound[pbound$Sample_ID == p.bout$Sample_ID[k]] = TRUE
+      } else{
+        pbound$d18O.bound[pbound$Sample_ID == p.bout$Sample_ID[k]] = FALSE
+      }
     }
     
     ## Write results
@@ -112,6 +133,10 @@ for(i in 1:length(sites)){
     
   }
 }
+
+## Summarize pbound and save
+sum(pbound$d18O.bound) / nrow(pbound)
+sum(pbound$d2H.bound) / nrow(pbound)
 
 # Parse mixing summaries ----
 nr = length(mixes)
@@ -199,7 +224,6 @@ for(i in 1:length(sites)){
     plot.post(smix, bouts[j])
   }
 }
-
 
 # Plot results: violin by bout ----
 ## Function

@@ -6,7 +6,7 @@ source("code/multiLikeOverlap.R")
 p = read.csv("out/plantsNoLow.csv")
 
 ## Get bits for SIBER
-ps = data.frame("iso1" = p$d2H, "iso2" = p$d18O, "group" = p$Species, 
+ps = data.frame("iso1" = p$d2H, "iso2" = p$d18O.oc, "group" = p$Species, 
                 "community" = p$Bout)
 
 ## Make sequential values for community

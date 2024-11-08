@@ -81,7 +81,7 @@ for(i in 1:nrow(bouts)){
     
     bouts$VWC1.10[i] = mean(vwc1$VSWCMean, na.rm = TRUE)
     bouts$VWC3.10[i] = mean(vwc3$VSWCMean, na.rm = TRUE)
-    bouts$VWC5.10[i] = mean(vwc3$VSWCMean, na.rm = TRUE)
+    bouts$VWC5.10[i] = mean(vwc5$VSWCMean, na.rm = TRUE)
   }else{
     bouts$VWC1.10[i] = bouts$VWC3.10[i] = bouts$VWC5.10[i] = NA
   }
@@ -96,7 +96,7 @@ for(i in 1:nrow(bouts)){
      & sum(!(is.na(vwc5$VSWCMean))) > 0){
     bouts$VWC1.1[i] = mean(vwc1$VSWCMean, na.rm = TRUE)
     bouts$VWC3.1[i] = mean(vwc3$VSWCMean, na.rm = TRUE)
-    bouts$VWC5.1[i] = mean(vwc3$VSWCMean, na.rm = TRUE)
+    bouts$VWC5.1[i] = mean(vwc5$VSWCMean, na.rm = TRUE)
   }else{
     bouts$VWC1.1[i] = bouts$VWC3.1[i] = bouts$VWC5.1[i] = NA
   }

@@ -19,6 +19,10 @@ sites = project(sites, isoscape)
 
 ## GW at sites
 gw = extract(isoscape, sites, method = "bilinear")
+gw.df = data.frame("Site" = sites$ID, "d2H.m" = gw$`d2h_1-10m`,
+                   "d2H.sd" = gw$`d2h_sd_1-10m`, "d18O.m" = gw$`d18o_1-10m`,
+                   "d18O.sd" = gw$`d18o_sd_1-10m`)
+write.csv(gw.df, "out/gw.csv", row.names = FALSE)
 
 ## Space for summary stats
 mixes = list()

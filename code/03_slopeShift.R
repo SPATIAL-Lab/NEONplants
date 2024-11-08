@@ -119,11 +119,11 @@ png("out/slopeShiftIRMS.png", 8, 4, units = "in", res = 600)
 layout(matrix(1:2, nrow = 1))
 par(mar = c(5, 5, 1, 1))
 
-plot(p.diff$d2H.irms, p.diff$d2H, pch = 21, bg = "tomato2",
+plot(p.diff$d2H.irms, p.diff$d2H, pch = 21, bg = "gray90",
      xlab = expression(delta^2*"H IRMS"), 
      ylab = expression(delta^2*"H CRDS"))
 abline(0, 1)
-points(p.diff$d2H.irms, p.diff$d2H, pch = 21, bg = "tomato2")
+points(p.diff$d2H.irms, p.diff$d2H, pch = 21, bg = "gray90")
 points(p.diff.ok$d2H.irms, p.diff.ok$d2H, 
        pch = 21, bg = "seagreen")
 text(par("usr")[2] - 0.05 * diff(par("usr")[1:2]),
@@ -132,11 +132,11 @@ text(par("usr")[2] - 0.05 * diff(par("usr")[1:2]),
             round(sqrt(mean((p.diff.ok$d2H - p.diff.ok$d2H.irms) ^ 2)), 1), 
             "\u2030"), adj = c(1, 0))
 
-plot(p.diff$d18O.irms, p.diff$d18O, pch = 21, bg = "tomato2",
+plot(p.diff$d18O.irms, p.diff$d18O, pch = 21, bg = "gray90",
      xlab = expression(delta^{18}*"O IRMS"), 
      ylab = expression(delta^{18}*"O CRDS"))
 abline(0, 1)
-points(p.diff$d18O.irms, p.diff$d18O, pch = 21, bg = "tomato2")
+points(p.diff$d18O.irms, p.diff$d18O, pch = 21, bg = "gray90")
 points(p.diff.ok$d18O.irms, p.diff.ok$d18O.oc, 
        pch = 21, bg = "seagreen")
 text(par("usr")[2] - 0.05 * diff(par("usr")[1:2]),
@@ -165,7 +165,7 @@ write.csv(specSpec, "out/screenedBySpecies.csv")
 ## Plot highest and lowest
 blank = specSpec[1,]
 blank[1,] = rep(NA)
-specplot = rbind(head(specSpec, 5), blank, tail (specSpec, 5))
+specplot = rbind(head(specSpec, 5), blank, tail(specSpec, 5))
 
 png("out/specShiftSpecies.png", 6, 4, units = "in", res = 600)
 par(mar = c(8, 5, 1, 1))

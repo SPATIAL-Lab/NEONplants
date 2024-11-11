@@ -12,15 +12,17 @@ for(i in 1:length(source.stats)){
 }
 
 ## Extract median of mean depth
-rd.50 = numeric()
+rd.IQR = rd.50 = numeric()
 for(i in 1:length(source.stats)){
   rdi.50 = apply(source.stats[[i]]$source.depths, 1, median)
   rd.50 = c(rd.50, rdi.50)
+  rdi.IQR = apply(source.stats[[i]]$source.depths, 1, IQR)
+  rd.IQR = c(rd.IQR, rdi.IQR)
 }
 
 ## Compile results
-rd = data.frame("Bout" = bouts, "Species" = species, "Med" = rd.50)
-plot(density(rd$Med))
+rd = data.frame("Bout" = bouts, "Species" = species, "Med" = rd.50,
+                "IQR" = rd.IQR)
 
 # Analyze source depth by species
 ## Unique species
@@ -55,17 +57,20 @@ gf = c("grass", "grass",
        "tree")
 
 ## Summarize by species
-rd.50 = rd.IQR = rd.n = numeric()
+rd.50 = rd.IQR = rd.n = rd.IQR.mean = numeric()
 for(i in 1:length(sp)){
-  rd.sub = rd$Med[rd$Species == sp[i]]
-  rd.50 = c(rd.50, median(rd.sub))
-  rd.IQR = c(rd.IQR, IQR(rd.sub))
-  rd.n = c(rd.n, length(rd.sub))
+  rd.sub = rd[rd$Species == sp[i],]
+  rd.50 = c(rd.50, median(rd.sub$Med))
+  ### IQR of the median depths per species
+  rd.IQR = c(rd.IQR, IQR(rd.sub$Med))
+  ### Species mean IQR of individual source depths
+  rd.IQR.mean = c(rd.IQR.mean, mean(rd.sub$IQR))
+  rd.n = c(rd.n, length(rd.sub$Med))
 }
 
 ## Compile results
 rd.sp = data.frame("Species" = sp, "Form" = gf, "n" = rd.n, 
-                   "Med" = rd.50, "IQR" = rd.IQR)
+                   "Med" = rd.50, "IQR" = rd.IQR, "IQR.mean" = rd.IQR.mean)
 rd.sp.med = rd.sp[order(rd.sp$Med),]
 rd.sp.iqr = rd.sp[order(rd.sp$IQR),]
 rd.sp.iqr = rd.sp.iqr[rd.sp.iqr$n >= 5,]
@@ -75,6 +80,9 @@ head(rd.sp.med)
 tail(rd.sp.med)
 head(rd.sp.iqr)
 tail(rd.sp.iqr)
+
+## Intermediate source depths are slightly less well constrained
+plot(rd.sp$Med, rd.sp$IQR.mean)
 
 ## Plot species highest/lowest
 blank = rd.sp[1,]
@@ -109,19 +117,20 @@ dev.off()
 
 # Analyze source depth by growth form
 ## Summarize by growth form
-rd.50 = rd.25 = rd.75 = rd.n = numeric()
+rd.50 = rd.25 = rd.75 = rd.IQR.mean = rd.n = numeric()
 gf = unique(gf)
 for(i in 1:length(gf)){
-  rd.sub = rd.sp$Med[rd.sp$Form == gf[i]]
-  rd.50 = c(rd.50, median(rd.sub))
-  rd.25 = c(rd.25, quantile(rd.sub, 0.25))
-  rd.75 = c(rd.75, quantile(rd.sub, 0.75))
-  rd.n = c(rd.n, length(rd.sub))
+  rd.sub = rd.sp[rd.sp$Form == gf[i],]
+  rd.50 = c(rd.50, median(rd.sub$Med))
+  rd.25 = c(rd.25, quantile(rd.sub$Med, 0.25))
+  rd.75 = c(rd.75, quantile(rd.sub$Med, 0.75))
+  rd.IQR.mean = c(rd.IQR.mean, mean(rd.sub$IQR.mean))
+  rd.n = c(rd.n, length(rd.sub$Med))
 }
 
 ## Compile results and look
 rd.gf = data.frame("Form" = gf, "n" = rd.n, "Med" = rd.50, 
-                   ".25" = rd.25, ".75" = rd.75)
+                   ".25" = rd.25, ".75" = rd.75, "IQR.mean" = rd.IQR.mean)
 rd.gf
 
 ## Plot by GF
@@ -190,9 +199,10 @@ for(i in seq_along(bouts$Bout)){
   bouts$sd[i] = sd(rd.sub$Med)
 }
 
-## Have a look - nothing 
+## Have a look - nothing much, maybe lower sd w/ wetter soil
 plot(bouts[, c(4:6, 15, 16)])
 plot(bouts[, c(7:12, 15, 16)])
+summary(lm(sd ~ VWC3.10, bouts))
 plot(bouts[, 13:16])
 
 # Analyze source depth by bout properties - species level data
@@ -216,8 +226,41 @@ for(i in seq_along(bouts$Site)){
 ## Have a look - mean depth increases and sd decreases as soil is wetter 
 plot(bouts[, c(4:6, 17, 18)])
 plot(bouts[, c(7:12, 17, 18)])
+summary(lm(mean.sp ~ VWC5.10, bouts))
 summary(lm(mean.sp ~ VWC3.10, bouts))
 summary(lm(mean.sp ~ VWC1.10, bouts))
+summary(lm(sd.sp ~ VWC5.10 , bouts))
 summary(lm(sd.sp ~ VWC3.10 , bouts))
 summary(lm(sd.sp ~ VWC1.10 , bouts))
 plot(bouts[, c(13:14, 17, 18)])
+
+# Plot site level responses
+png("out/sourceSites.png", width = 9, height = 5,
+    units = "in", res = 600)
+layout(matrix(c(1, 2), ncol = 2))
+
+par(mar = c(5, 5, 3, 1))
+plot(sites$MAP, sites$mean, ylim = c(3.7, 2), xlab = "Site MAP (mm)",
+     ylab = "", main = "Mean source depth", axes = FALSE)
+abline(lm(mean ~ MAP, sites), lty = 2)
+points(sites$MAP, sites$mean, pch = 21, cex = 2, bg = "seagreen",
+       lwd = 2)
+axis(2, c(2, 3.7), labels = FALSE, lwd.ticks = 0)
+axis(2, 2:3, c("10-20 cm", "20-40 cm"), las = 1)
+axis(1)
+x = par("usr")[2] - 0.05 * diff(range(par("usr")[1:2]))
+y = par("usr")[4] + 0.1 * diff(range(par("usr")[3:4]))
+text(x, y, "p = 0.06", pos = 2)
+
+plot(sites$VPDmax, sites$sd, xlab = "Site VPDmax (hPa)", ylab = "", 
+     ylim = c(0.25, 0.95), main = "Source depth SD", axes = FALSE)
+abline(lm(sd ~ VPDmax, sites), lty = 2)
+points(sites$VPDmax, sites$sd, pch = 21, cex = 2, bg = "seagreen",
+       lwd = 2)
+axis(2, c(0.3, 0.6, 0.9), las = 1)
+axis(1)
+x = par("usr")[2] - 0.05 * diff(range(par("usr")[1:2]))
+y = par("usr")[3] + 0.1 * diff(range(par("usr")[3:4]))
+text(x, y, "p = 0.04", pos = 2)
+
+dev.off()

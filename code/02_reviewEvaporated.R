@@ -137,7 +137,7 @@ plot(0, 0, type = "n", axes = FALSE, xlab = "", ylab = "")
 text(0, 0, expression(bold(delta^{18}*"O (VSMOW)")), cex = 1.75)
 
 par(mar = c(5, 5, 1, 1))
-plot(sirms$d18O.irms, sirms$d18O, pch = 21, bg = "salmon2",
+plot(sirms$d18O.irms, sirms$d18O, pch = 21, bg = "salmon2", xlim = c(-9.5, -2),
      xlab = "IRMS", ylab = "CRDS", cex.lab = 1.5)
 abline(0, 1)
 points(sirms$d18O.irms, sirms$d18O, pch = 21, bg = "salmon2", cex = 1.5)

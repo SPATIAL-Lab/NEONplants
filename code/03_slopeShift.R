@@ -134,7 +134,8 @@ text(par("usr")[2] - 0.05 * diff(par("usr")[1:2]),
 
 plot(p.diff$d18O.irms, p.diff$d18O, pch = 21, bg = "gray90",
      xlab = expression(delta^{18}*"O IRMS"), 
-     ylab = expression(delta^{18}*"O CRDS"))
+     ylab = expression(delta^{18}*"O CRDS"),
+     ylim = range(c(p.diff$d18O, p.diff$d18O.oc)))
 abline(0, 1)
 points(p.diff$d18O.irms, p.diff$d18O, pch = 21, bg = "gray90")
 points(p.diff.ok$d18O.irms, p.diff.ok$d18O.oc, 

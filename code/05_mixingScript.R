@@ -104,7 +104,8 @@ for(i in 1:length(sites)){
     ## Mixing analysis
     smix = list()
     for(k in 1:nrow(obs)){
-      smix[[k]] = mixSource(obs[k,], sources, el, edist = "gamma",
+      smix[[k]] = mixSource(obs[k,], sources, el, edist = "gamma", 
+                            prior = rep(0.3, nrow(sources)),
                             eprior = eprior, ngens = 5e4, ncores = 3)
       names(smix)[k] = p.bout$Species[k]
       names(smix[[k]]$results)[3:(2 + length(snames))] = snames
@@ -141,6 +142,7 @@ for(i in 1:length(sites)){
 ## Summarize pbound and save
 sum(pbound$d18O.bound) / nrow(pbound)
 sum(pbound$d2H.bound) / nrow(pbound)
+write.csv(pbound, "out/pBound.csv", row.names = FALSE)
 
 # Parse mixing summaries ----
 nr = length(mixes)
